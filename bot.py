@@ -1,8 +1,20 @@
 import os
 import asyncio
 import logging
+from flask import Flask
 from pyrogram import Client, filters
 from pyrogram.types import Message
+
+# Create Flask app for port binding
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "🤖 Public Auto-Forward Bot is running!"
+
+@app.route('/health')
+def health():
+    return "✅ OK"
 
 # Configure logging
 logging.basicConfig(
@@ -445,32 +457,32 @@ class PublicAutoForwardBot:
         finally:
             self.is_forwarding = False
 
-    async def run(self):
-        """Start the bot"""
+    async def run_telegram_bot(self):
+        """Run the Telegram bot part"""
         try:
             await self.app.start()
             me = await self.app.get_me()
             logger.info(f"🤖 Bot started successfully: @{me.username}")
             logger.info("🚀 Public Auto-Forward Bot is running...")
             
-            # Keep the bot running
-            await asyncio.Future()
+            await asyncio.Future()  # Run forever
             
         except Exception as e:
-            logger.error(f"Bot startup error: {e}")
-            raise
+            logger.error(f"Telegram bot crashed: {e}")
         finally:
             await self.app.stop()
 
-def main():
-    """Main function to run the bot"""
-    try:
-        bot = PublicAutoForwardBot()
-        asyncio.run(bot.run())
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
-    except Exception as e:
-        logger.error(f"Bot crashed: {e}")
+def run_flask():
+    """Run Flask web server"""
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
-if __name__ == "__main__":
-    main()
+async def main():
+    bot = PublicAutoForwardBot()
+    await asyncio.gather(
+        bot.run_telegram_bot(),
+        asyncio.to_thread(run_flask)
+    )
+
+if __name__ == '__main__':
+    asyncio.run(main())
